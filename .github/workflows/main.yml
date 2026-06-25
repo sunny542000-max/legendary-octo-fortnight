@@ -1,1 +1,40 @@
+# Pipeline triggers
+trigger:
+  - main
+
+# Define virtual machine host
+pool:
+  vmImage: 'ubuntu-latest'
+
+# Pipeline Stages
+stages:
+  - stage: Build
+    jobs:
+      - job: BuildJob
+        steps:
+          - script: echo "Installing dependencies..."
+          - script: npm install
+          
+          - script: echo "Running tests..."
+          - script: npm test
+
+          - script: echo "Building the application..."
+          - script: npm run build
+
+          - task: PublishPipelineArtifact@1
+            inputs:
+              targetPath: '$(System.DefaultWorkingDirectory)/dist'
+              artifactName: 'frontend-build'
+
+  - stage: Deploy
+    dependsOn: Build
+    jobs:
+      - deployment: DeployToStaging
+        environment: Staging
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - download: current
+                - script: echo "Deploying to Staging server..."
 
